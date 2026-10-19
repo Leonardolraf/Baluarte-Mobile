@@ -90,11 +90,14 @@ export const apiAuthRepository: AuthRepository = {
       const user = userFromMe(me);
       return canAccessCampaigns(user.role) ? user : null;
     } catch (error) {
-      // Ciência pendente: a sessão é VÁLIDA, só falta um ato no portal — mantém
-      // o token (se o /me estiver gated, só não dá pra restaurar o perfil aqui;
-      // o login refaz e a Home orienta pelo 403). Erro de rede: também mantém.
-      // Só uma falha REAL de autenticação (token inválido/expirado) limpa.
-      if (error instanceof ApiError && error.code !== 'CIENCIA_AVISO_PENDENTE') {
+      // DEFAULT SEGURO: só uma rejeição de autenticação de verdade — HTTP 401
+      // (token morto/expirado, sessão encerrada, usuário removido) — limpa o
+      // token. QUALQUER outro caso MANTÉM o token: 403 (ciência, perfil, ou
+      // código DESCONHECIDO), erro de rede e 5xx. Decidir por status, não por
+      // string, deixa isto à prova de renomear o código de ciência — nunca
+      // volta ao laço de login em silêncio. Num 403 a sessão é válida (falta um
+      // ato no portal ou é permissão); o login refaz e a Home orienta pelo 403.
+      if (error instanceof ApiError && error.status === 401) {
         await tokenStore.clear();
       }
       return null;

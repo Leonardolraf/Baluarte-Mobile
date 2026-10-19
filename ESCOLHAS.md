@@ -76,7 +76,7 @@ Todas em `lib/validation.ts`, puras e com as mensagens do produto web:
 
 ## 8. Testes (jest-expo + Testing Library)
 
-113 testes em 16 suítes (`src/__tests__/`):
+114 testes em 16 suítes (`src/__tests__/`):
 
 - **lib/** — `format` (datas pt-BR, taxa de clique 24/28/31/17% e "—", iniciais, nome a partir do e-mail), `validation` (todas as mensagens, datas inexistentes, passado, próxima ocorrência do mês e virada do ano), `auth` (contas, senha curta, RBAC), `campaigns` (ordem, filtro, KPIs, campanha nova).
 - **routes/** — `linking` (caminho de cada tela na web, a tela de base embaixo de quem é aberto pela URL e o e-mail fora da URL).
@@ -141,9 +141,12 @@ NÃO estava no código do backend (aprovado, em implementação). No app (modo A
   "Confirme o aviso de monitoramento no portal Baluarte para usar o app" (sem
   botão de repetir, que não ajudaria até a ciência ser dada no portal). Isso
   funciona com o `/me` dentro ou fora do gate, com ou sem campo novo.
-- **`restoreSession` não apaga o token** num 403 de ciência (sessão válida, falta
-  ato no portal) nem em erro de rede; só limpa em falha REAL de autenticação
-  (ex.: `TOKEN_INVALIDO`). Antes, qualquer falha do `/me` apagava o token.
+- **`restoreSession` tem default SEGURO:** só limpa o token num **HTTP 401**
+  (rejeição de autenticação de verdade — token morto/sessão encerrada). Qualquer
+  outro caso **mantém** o token: 403 (ciência, perfil, ou código DESCONHECIDO),
+  erro de rede e 5xx. Decidir por **status, não por string**, deixa isto à prova
+  de renomear o código de ciência — nunca volta ao laço de login em silêncio.
+  Antes, qualquer falha do `/me` apagava o token.
 - **Campo `cienciaAvisoPendente` (quando o backend passar a mandá-lo no `/me`)**
   vira `User.noticePending`, repassado como veio: ausente = `undefined`
   (DESCONHECIDO), **nunca `false`** — ausência de dado não é ausência de

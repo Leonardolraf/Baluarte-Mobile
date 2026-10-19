@@ -188,6 +188,20 @@ describe('apiAuthRepository.restoreSession', () => {
     expect(mockSecureStore.deleteItemAsync).toHaveBeenCalledWith('baluarte.token');
   });
 
+  it('403 com código DESCONHECIDO: MANTÉM o token (default seguro, à prova de rename)', async () => {
+    // Se a string de ciência for renomeada no backend, cai aqui — e NÃO pode
+    // virar laço de login silencioso. Só 401 limpa; qualquer 403 mantém.
+    mockSecureStore.getItemAsync.mockResolvedValue('jwt-abc');
+    fetchMock.mockResolvedValueOnce(
+      reply(403, { status: 'erro', mensagem: 'x', codigoErro: 'ALGUM_CODIGO_NOVO_QUALQUER' }),
+    );
+
+    const user = await apiAuthRepository.restoreSession();
+
+    expect(user).toBeNull();
+    expect(mockSecureStore.deleteItemAsync).not.toHaveBeenCalled();
+  });
+
   it('erro de rede: MANTÉM o token (pode ser queda momentânea)', async () => {
     mockSecureStore.getItemAsync.mockResolvedValue('jwt-abc');
     fetchMock.mockRejectedValueOnce(new TypeError('offline'));
