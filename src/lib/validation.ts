@@ -79,15 +79,25 @@ export interface RecipientsResult {
   error: string | null;
 }
 
-/** Só aceita e-mails válidos do domínio interno (mesma regra do backend). */
-export function validateRecipients(raw: string): RecipientsResult {
+/**
+ * Só aceita e-mails válidos do domínio interno (mesma regra do backend). Com
+ * `internalDomain = null` (modo API) confere só o formato: quais contas recebem
+ * (domínio liberado, conta Ativa) quem decide é o backend, que responde 422 com a
+ * mensagem — o domínio real não é o `@empresa.com` da demonstração.
+ */
+export function validateRecipients(
+  raw: string,
+  internalDomain: string | null = INTERNAL_DOMAIN,
+): RecipientsResult {
   const emails = parseRecipients(raw);
   if (emails.length === 0) return { emails, error: MESSAGES.recipientsRequired };
 
   const invalid = emails.find((email) => !EMAIL_PATTERN.test(email));
   if (invalid) return { emails, error: MESSAGES.recipientInvalid(invalid) };
 
-  const external = emails.filter((email) => !email.endsWith(INTERNAL_DOMAIN));
+  if (internalDomain === null) return { emails, error: null };
+
+  const external = emails.filter((email) => !email.endsWith(internalDomain));
   if (external.length > 0) return { emails, error: MESSAGES.recipientExternal(listSample(external)) };
 
   return { emails, error: null };
@@ -162,8 +172,21 @@ export type NewCampaignValidation =
   | { ok: true; value: NewCampaignInput }
   | { ok: false; errors: NewCampaignErrors };
 
+export interface NewCampaignOptions {
+  /**
+   * Formulário enxuto do modo API: só nome, modelo e destinatários. Grupo-alvo e
+   * data não vão para o backend (POST /campaigns não tem esses campos), então não
+   * são pedidos nem validados; o domínio dos destinatários fica com o backend.
+   */
+  minimal?: boolean;
+}
+
 /** Valida o formulário inteiro de uma vez e devolve os dados prontos para agendar. */
-export function validateNewCampaign(form: NewCampaignForm, now: Date): NewCampaignValidation {
+export function validateNewCampaign(
+  form: NewCampaignForm,
+  now: Date,
+  { minimal = false }: NewCampaignOptions = {},
+): NewCampaignValidation {
   const errors: NewCampaignErrors = {};
 
   const nameError = validateCampaignName(form.name);
@@ -172,12 +195,12 @@ export function validateNewCampaign(form: NewCampaignForm, now: Date): NewCampai
   const templateError = validateTemplate(form.template);
   if (templateError) errors.template = templateError;
 
-  if (!form.targetGroup.trim()) errors.targetGroup = MESSAGES.groupRequired;
+  if (!minimal && !form.targetGroup.trim()) errors.targetGroup = MESSAGES.groupRequired;
 
-  const schedule = resolveSchedule(form.schedule, now);
+  const schedule: ScheduleResult = minimal ? { date: now, error: null } : resolveSchedule(form.schedule, now);
   if (schedule.error) errors.schedule = schedule.error;
 
-  const recipients = validateRecipients(form.recipients);
+  const recipients = validateRecipients(form.recipients, minimal ? null : INTERNAL_DOMAIN);
   if (recipients.error) errors.recipients = recipients.error;
 
   if (Object.keys(errors).length > 0 || !form.template || !schedule.date) {

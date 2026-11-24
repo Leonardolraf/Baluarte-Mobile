@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import {
   Button,
+  ErrorBanner,
   FormField,
   GroupPickerModal,
   GroupSelect,
@@ -16,6 +17,8 @@ import { useCampaigns, useToast } from '../../contexts';
 import { daysFromTodayAtNine } from '../../data/campaigns';
 import { DEFAULT_TARGET_GROUP } from '../../data/groups';
 import { getTemplate } from '../../data/templates';
+import { ApiError } from '../../lib/api/client';
+import { IS_API_MODE } from '../../lib/config';
 import { padTwo } from '../../lib/format';
 import {
   CAMPAIGN_NAME_MAX,
@@ -32,11 +35,17 @@ import type { AppScreenProps } from '../../types/navigation';
 import { styles } from './styles';
 
 const SCHEDULE_HINT = 'A campanha dispara automaticamente na data e hora informadas.';
-const DEFAULT_RECIPIENTS = [
-  'ana.almeida@empresa.com',
-  'bruno.barbosa@empresa.com',
-  'carla.cardoso@empresa.com',
-].join('\n');
+
+/**
+ * Modo API = formulário enxuto (nome, modelo, destinatários): grupo-alvo e data não
+ * existem no POST /campaigns. Destinatários começam vazios — as contas são reais e
+ * a campanha dispara e-mail simulado de verdade para elas.
+ */
+const MINIMAL_FORM = IS_API_MODE;
+const DEFAULT_RECIPIENTS = MINIMAL_FORM
+  ? ''
+  : ['ana.almeida@empresa.com', 'bruno.barbosa@empresa.com', 'carla.cardoso@empresa.com'].join('\n');
+const SUBMIT_ERROR = 'Não foi possível criar a campanha.';
 
 /** Hoje + 7 dias às 09:00, já quebrado nos quatro campos. */
 function defaultSchedule(now: Date): ScheduleFields {
@@ -79,12 +88,15 @@ export function NewCampaignScreen({ navigation }: AppScreenProps<'NewCampaign'>)
   }
 
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   async function handleSubmit() {
     if (submitting) return;
+    setSubmitError(null);
     const result = validateNewCampaign(
       { name, template, targetGroup, schedule, recipients },
       new Date(),
+      { minimal: MINIMAL_FORM },
     );
     if (!result.ok) {
       setErrors(result.errors);
@@ -97,9 +109,12 @@ export function NewCampaignScreen({ navigation }: AppScreenProps<'NewCampaign'>)
       showToast('Campanha agendada com sucesso');
       // Substitui a Nova campanha: o "voltar" dos Detalhes leva direto à Home.
       navigation.replace('CampaignDetails', { campaignId: campaign.id });
-    } catch {
+    } catch (err) {
       setSubmitting(false);
-      showToast('Não foi possível agendar a campanha.');
+      // O backend explica o motivo (destinatário externo, não cadastrado, convite
+      // pendente, envio em massa…): mostra a mensagem dele no formulário.
+      if (err instanceof ApiError) setSubmitError(err.message || SUBMIT_ERROR);
+      else showToast(MINIMAL_FORM ? SUBMIT_ERROR : 'Não foi possível agendar a campanha.');
     }
   }
 
@@ -146,74 +161,78 @@ export function NewCampaignScreen({ navigation }: AppScreenProps<'NewCampaign'>)
             />
           </FormField>
 
-          <FormField label="Grupo-alvo" required error={errors.targetGroup}>
-            <GroupSelect
-              value={targetGroup}
-              onPress={() => setPickerVisible(true)}
-              invalid={Boolean(errors.targetGroup)}
-            />
-          </FormField>
-
-          <View>
-            <View style={styles.scheduleRow}>
-              <FormField label="Dia e mês">
-                <View style={styles.inline}>
-                  <SmallInput
-                    value={schedule.day}
-                    onChangeText={(value) => updateSchedule('day', value)}
-                    onBlur={() => padScheduleField('day')}
-                    placeholder="DD"
-                    invalid={Boolean(errors.schedule)}
-                    accessibilityLabel="Dia"
-                  />
-                  <Text style={styles.separator}>/</Text>
-                  <SmallInput
-                    value={schedule.month}
-                    onChangeText={(value) => updateSchedule('month', value)}
-                    onBlur={() => padScheduleField('month')}
-                    placeholder="MM"
-                    invalid={Boolean(errors.schedule)}
-                    accessibilityLabel="Mês"
-                  />
-                </View>
+          {MINIMAL_FORM ? null : (
+            <>
+              <FormField label="Grupo-alvo" required error={errors.targetGroup}>
+                <GroupSelect
+                  value={targetGroup}
+                  onPress={() => setPickerVisible(true)}
+                  invalid={Boolean(errors.targetGroup)}
+                />
               </FormField>
 
-              <FormField label="Horário">
-                <View style={styles.inline}>
-                  <SmallInput
-                    value={schedule.hour}
-                    onChangeText={(value) => updateSchedule('hour', value)}
-                    onBlur={() => padScheduleField('hour')}
-                    placeholder="HH"
-                    invalid={Boolean(errors.schedule)}
-                    accessibilityLabel="Hora"
-                  />
-                  <Text style={styles.separator}>:</Text>
-                  <SmallInput
-                    value={schedule.minute}
-                    onChangeText={(value) => updateSchedule('minute', value)}
-                    onBlur={() => padScheduleField('minute')}
-                    placeholder="MM"
-                    invalid={Boolean(errors.schedule)}
-                    accessibilityLabel="Minuto"
-                  />
-                </View>
-              </FormField>
-            </View>
+              <View>
+                <View style={styles.scheduleRow}>
+                  <FormField label="Dia e mês">
+                    <View style={styles.inline}>
+                      <SmallInput
+                        value={schedule.day}
+                        onChangeText={(value) => updateSchedule('day', value)}
+                        onBlur={() => padScheduleField('day')}
+                        placeholder="DD"
+                        invalid={Boolean(errors.schedule)}
+                        accessibilityLabel="Dia"
+                      />
+                      <Text style={styles.separator}>/</Text>
+                      <SmallInput
+                        value={schedule.month}
+                        onChangeText={(value) => updateSchedule('month', value)}
+                        onBlur={() => padScheduleField('month')}
+                        placeholder="MM"
+                        invalid={Boolean(errors.schedule)}
+                        accessibilityLabel="Mês"
+                      />
+                    </View>
+                  </FormField>
 
-            {errors.schedule ? (
-              <Text style={styles.scheduleError} accessibilityRole="alert">
-                {errors.schedule}
-              </Text>
-            ) : (
-              <Text style={styles.scheduleHint}>{SCHEDULE_HINT}</Text>
-            )}
-          </View>
+                  <FormField label="Horário">
+                    <View style={styles.inline}>
+                      <SmallInput
+                        value={schedule.hour}
+                        onChangeText={(value) => updateSchedule('hour', value)}
+                        onBlur={() => padScheduleField('hour')}
+                        placeholder="HH"
+                        invalid={Boolean(errors.schedule)}
+                        accessibilityLabel="Hora"
+                      />
+                      <Text style={styles.separator}>:</Text>
+                      <SmallInput
+                        value={schedule.minute}
+                        onChangeText={(value) => updateSchedule('minute', value)}
+                        onBlur={() => padScheduleField('minute')}
+                        placeholder="MM"
+                        invalid={Boolean(errors.schedule)}
+                        accessibilityLabel="Minuto"
+                      />
+                    </View>
+                  </FormField>
+                </View>
+
+                {errors.schedule ? (
+                  <Text style={styles.scheduleError} accessibilityRole="alert">
+                    {errors.schedule}
+                  </Text>
+                ) : (
+                  <Text style={styles.scheduleHint}>{SCHEDULE_HINT}</Text>
+                )}
+              </View>
+            </>
+          )}
 
           <FormField
             label="Destinatários"
             required
-            aside={`Somente ${INTERNAL_DOMAIN}`}
+            aside={MINIMAL_FORM ? 'Contas internas ativas' : `Somente ${INTERNAL_DOMAIN}`}
             error={errors.recipients}
           >
             <TextArea
@@ -222,7 +241,9 @@ export function NewCampaignScreen({ navigation }: AppScreenProps<'NewCampaign'>)
                 setRecipients(value);
                 clearError('recipients');
               }}
-              placeholder={'nome.sobrenome@empresa.com\noutra.pessoa@empresa.com'}
+              placeholder={
+                MINIMAL_FORM ? 'Um e-mail por linha' : 'nome.sobrenome@empresa.com\noutra.pessoa@empresa.com'
+              }
               keyboardType="email-address"
               invalid={Boolean(errors.recipients)}
               accessibilityLabel="Destinatários"
@@ -230,8 +251,10 @@ export function NewCampaignScreen({ navigation }: AppScreenProps<'NewCampaign'>)
             />
           </FormField>
 
+          {submitError ? <ErrorBanner message={submitError} /> : null}
+
           <Button
-            title="Agendar campanha"
+            title={MINIMAL_FORM ? 'Criar campanha' : 'Agendar campanha'}
             icon={icons.Calendar}
             onPress={handleSubmit}
             disabled={submitting}

@@ -162,3 +162,62 @@ describe('lib/validation — nova campanha', () => {
     });
   });
 });
+
+describe('lib/validation — nova campanha enxuta (modo API)', () => {
+  it('o domínio real (não @empresa.com) passa: quem decide é o backend', () => {
+    expect(validateRecipients('ana@baluarte.test', null)).toEqual({
+      emails: ['ana@baluarte.test'],
+      error: null,
+    });
+    // O formato continua sendo conferido no app.
+    expect(validateRecipients('ana@baluarte.test\nquebrado', null).error).toBe('E-mail inválido: quebrado');
+  });
+
+  it('não pede grupo-alvo nem data; agenda "agora"', () => {
+    const result = validateNewCampaign(
+      {
+        name: 'Demo banca',
+        template: 'authority',
+        targetGroup: '',
+        schedule: { day: '', month: '', hour: '', minute: '' },
+        recipients: 'teste@baluarte.test',
+      },
+      NOW,
+      { minimal: true },
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        name: 'Demo banca',
+        template: 'authority',
+        targetGroup: '',
+        scheduledAt: NOW,
+        recipients: ['teste@baluarte.test'],
+      },
+    });
+  });
+
+  it('nome, modelo e destinatários continuam obrigatórios', () => {
+    const result = validateNewCampaign(
+      {
+        name: '',
+        template: null,
+        targetGroup: '',
+        schedule: { day: '', month: '', hour: '', minute: '' },
+        recipients: '',
+      },
+      NOW,
+      { minimal: true },
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      errors: {
+        name: 'Informe o nome da campanha.',
+        template: 'Selecione um modelo.',
+        recipients: 'Informe ao menos um destinatário.',
+      },
+    });
+  });
+});

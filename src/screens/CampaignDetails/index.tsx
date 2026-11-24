@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import {
   Button,
-  ButtonIcon,
   CampaignBanner,
   Header,
   InfoNote,
@@ -11,10 +10,9 @@ import {
   Screen,
 } from '../../components';
 import { useCampaigns } from '../../contexts';
-import { getTemplate } from '../../data/templates';
 import { IS_API_MODE } from '../../lib/config';
 import { formatNumber } from '../../lib/format';
-import { colors, icons } from '../../theme';
+import { colors } from '../../theme';
 import type { Campaign } from '../../types';
 import type { AppScreenProps } from '../../types/navigation';
 import { styles } from './styles';
@@ -70,7 +68,6 @@ export function CampaignDetailsScreen({ navigation, route }: AppScreenProps<'Cam
     );
   }
 
-  const template = getTemplate(campaign.template);
   const isScheduled = campaign.status === 'scheduled';
 
   return (
@@ -96,14 +93,6 @@ export function CampaignDetailsScreen({ navigation, route }: AppScreenProps<'Cam
           ) : null}
         </View>
       </ScrollView>
-
-      <View style={styles.footer}>
-        <ButtonIcon
-          title="Ver material de treinamento"
-          icon={icons.GraduationCap}
-          onPress={() => navigation.navigate('Training', { trainingId: template.trainingId })}
-        />
-      </View>
     </Screen>
   );
 }

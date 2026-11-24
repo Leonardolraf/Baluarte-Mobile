@@ -15,7 +15,9 @@ describe('Login', () => {
     expect(screen.getByText('PLATAFORMA DE CIBERSEGURANÇA')).toBeOnTheScreen();
     expect(screen.getByLabelText('E-mail')).toHaveDisplayValue('admin@empresa.com');
     expect(screen.getByLabelText('Senha')).toHaveDisplayValue('');
-    expect(screen.getByText('Perfis: Administrador · Analista · Colaborador')).toBeOnTheScreen();
+    // Versão enxuta: sem "Esqueci minha senha" (é no portal web) e sem o rodapé de perfis.
+    expect(screen.queryByText('Esqueci minha senha')).not.toBeOnTheScreen();
+    expect(screen.queryByText('Perfis: Administrador · Analista · Colaborador')).not.toBeOnTheScreen();
   });
 
   it('valida e-mail e senha obrigatórios', async () => {

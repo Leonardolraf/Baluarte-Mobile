@@ -9,12 +9,9 @@ type RootScreen = keyof RootStackParamList;
  */
 const BASE_SCREEN: Record<RootScreen, RootScreen | null> = {
   Login: null,
-  ResetPassword: 'Login',
-  ResetSent: 'Login',
   Home: null,
   NewCampaign: 'Home',
   CampaignDetails: 'Home',
-  Training: 'Home',
 };
 
 function isRootScreen(name: string): name is RootScreen {
@@ -34,12 +31,9 @@ export const webLinking: LinkingOptions<RootStackParamList> = {
   config: {
     screens: {
       Login: '',
-      ResetPassword: 'redefinir-senha',
-      ResetSent: 'redefinir-senha/enviada',
       Home: 'campanhas',
       NewCampaign: 'campanhas/nova',
       CampaignDetails: 'campanhas/:campaignId',
-      Training: 'treinamentos/:trainingId',
     },
   },
   getStateFromPath: (path, options) => {
@@ -49,7 +43,6 @@ export const webLinking: LinkingOptions<RootStackParamList> = {
     if (!state || !route || !base) return state;
     return { ...state, index: 1, routes: [{ name: base }, route] };
   },
-  // Parâmetros fora do caminho não viram query string: o e-mail que o Login passa
-  // para a redefinição de senha não aparece na barra de endereço nem no histórico.
+  // Parâmetros fora do caminho não viram query string (nada de dado na barra de endereço).
   getPathFromState: (state, options) => getPathFromState(state, options).split('?')[0],
 };

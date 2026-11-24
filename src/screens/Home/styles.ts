@@ -1,8 +1,8 @@
 import { StyleSheet } from 'react-native';
 import { colors, layout, spacing, typography } from '../../theme';
 
-/** Cards de modelo → título "Campanhas" (captura 04). */
-const LIST_HEADER_GAP = 28;
+/** Saudação → título "Campanhas" (versão enxuta, sem o filtro por modelo). */
+const LIST_HEADER_GAP = spacing.xxxl;
 const LIST_TOP = spacing.md;
 
 /**
@@ -39,9 +39,6 @@ export const styles = StyleSheet.create({
     ...typography.bodySmall,
     marginTop: spacing.xxs,
     color: colors.text.secondary,
-  },
-  templates: {
-    marginTop: spacing.xxxl,
   },
   listHeader: {
     marginTop: LIST_HEADER_GAP,

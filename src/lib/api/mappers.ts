@@ -16,6 +16,9 @@ import type {
 } from '../../types';
 
 /** Normaliza rótulos do backend: minúsculas, sem acento, sem espaços nas pontas. */
+/** O backend não tem grupo-alvo: toda campanha da API é para as contas internas. */
+export const API_TARGET_GROUP = 'Colaboradores internos';
+
 export function norm(value: string | undefined | null): string {
   return (value ?? '')
     .normalize('NFD')
@@ -140,7 +143,7 @@ export function campaignFromList(raw: BackendCampaignList): Campaign {
     id: raw.id,
     name: raw.nome,
     template: templateFromLabel(raw.template),
-    targetGroup: 'Colaboradores internos',
+    targetGroup: API_TARGET_GROUP,
     status,
     scheduledAt: raw.criadoEm,
     metrics: {
@@ -243,7 +246,7 @@ export function campaignFromReport(raw: BackendCampaignReport): Campaign {
     id: raw.id,
     name: raw.nome,
     template: templateFromLabel(raw.template),
-    targetGroup: 'Colaboradores internos',
+    targetGroup: API_TARGET_GROUP,
     status: statusFromLabel(raw.status),
     scheduledAt: raw.criadoEm,
     metrics: metricsFromReport(raw),

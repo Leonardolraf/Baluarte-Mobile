@@ -1,8 +1,7 @@
 import { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import {
   BaluarteMark,
-  BastionRings,
   Button,
   ErrorBanner,
   FormField,
@@ -13,6 +12,7 @@ import {
 } from '../../components';
 import { useAuth } from '../../contexts';
 import { DEFAULT_LOGIN_EMAIL } from '../../data/users';
+import { IS_API_MODE } from '../../lib/config';
 import { validateEmail, validatePassword } from '../../lib/validation';
 import type { AuthScreenProps } from '../../types/navigation';
 import { styles } from './styles';
@@ -22,9 +22,12 @@ interface LoginErrors {
   password?: string | null;
 }
 
-export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
+// No modo API a conta é real: nada pré-preenchido (o e-mail de demonstração não existe lá).
+const INITIAL_EMAIL = IS_API_MODE ? '' : DEFAULT_LOGIN_EMAIL;
+
+export function LoginScreen(_props: AuthScreenProps<'Login'>) {
   const { signIn } = useAuth();
-  const [email, setEmail] = useState(DEFAULT_LOGIN_EMAIL);
+  const [email, setEmail] = useState(INITIAL_EMAIL);
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<LoginErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -63,9 +66,7 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.brand}>
-            <BastionRings>
-              <BaluarteMark size={64} />
-            </BastionRings>
+            <BaluarteMark size={64} />
             <View style={styles.wordmark}>
               <Wordmark tagline="PLATAFORMA DE CIBERSEGURANÇA" />
             </View>
@@ -126,18 +127,6 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
 
           <Button title="Entrar" onPress={handleSubmit} disabled={submitting} style={styles.submit} />
 
-          <Pressable
-            onPress={() => navigation.navigate('ResetPassword', { email: email.trim() })}
-            accessibilityRole="button"
-            hitSlop={8}
-            style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}
-          >
-            <Text style={styles.linkText}>Esqueci minha senha</Text>
-          </Pressable>
-
-          <View style={styles.spacer} />
-
-          <Text style={styles.footer}>Perfis: Administrador · Analista · Colaborador</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>

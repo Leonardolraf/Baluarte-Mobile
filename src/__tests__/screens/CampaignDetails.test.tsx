@@ -59,13 +59,12 @@ describe('Detalhes da campanha', () => {
     expect(within(banner).getByText('Toda a empresa')).toBeOnTheScreen();
   });
 
-  it('abre o treinamento do modelo da campanha', async () => {
+  it('versão enxuta: sem o atalho para o material de treinamento', async () => {
     await openCampaign('camp-003');
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Ver material de treinamento' }));
-
-    expect(await screen.findByText('Golpes que usam autoridade')).toBeOnTheScreen();
-    expect(screen.getByText('US-006')).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Ver material de treinamento' }),
+    ).not.toBeOnTheScreen();
   });
 
   it('campanha inexistente: avisa e volta para a lista', async () => {

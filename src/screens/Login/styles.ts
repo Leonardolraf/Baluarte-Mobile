@@ -7,6 +7,8 @@ export const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
+    // Versão enxuta: o formulário fica no centro da tela (no tablet sobra muita altura).
+    justifyContent: 'center',
     paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.xl,
   },
@@ -39,25 +41,5 @@ export const styles = StyleSheet.create({
   },
   submit: {
     marginTop: spacing.xxl,
-  },
-  link: {
-    alignSelf: 'center',
-    marginTop: spacing.xl,
-  },
-  linkPressed: {
-    opacity: 0.6,
-  },
-  linkText: {
-    ...typography.label,
-    color: colors.text.primary,
-  },
-  spacer: {
-    flexGrow: 1,
-    minHeight: spacing.xxxl,
-  },
-  footer: {
-    ...typography.caption,
-    color: colors.text.muted,
-    textAlign: 'center',
   },
 });

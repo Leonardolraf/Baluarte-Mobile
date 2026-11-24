@@ -30,20 +30,13 @@ describe('Home', () => {
     expect(screen.getByText('Analista · TI')).toBeOnTheScreen();
   });
 
-  it('filtro por modelo altera a lista e o Total; tocar de novo limpa', async () => {
+  it('versão enxuta: lista todas as campanhas, sem o filtro por modelo', async () => {
     await renderApp({ user: ADMIN });
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Urgência' }));
-    expect(screen.getByText('Total 2')).toBeOnTheScreen();
-    expect(listedCampaignIds()).toEqual(['campaign-item-camp-001', 'campaign-item-camp-002']);
-    expect(screen.queryByText('Fake Invoice Julho')).not.toBeOnTheScreen();
-
-    await fireEvent.press(screen.getByRole('button', { name: 'Curiosidade' }));
-    expect(screen.getByText('Total 1')).toBeOnTheScreen();
-    expect(screen.getByText('Fake Invoice Julho')).toBeOnTheScreen();
-
-    await fireEvent.press(screen.getByRole('button', { name: 'Curiosidade' }));
+    expect(screen.queryByRole('button', { name: 'Urgência' })).not.toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Curiosidade' })).not.toBeOnTheScreen();
     expect(screen.getByText('Total 5')).toBeOnTheScreen();
+    expect(listedCampaignIds()).toHaveLength(5);
   });
 
   it('mostra Total 6 depois de agendar uma campanha', async () => {

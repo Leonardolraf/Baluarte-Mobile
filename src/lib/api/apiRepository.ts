@@ -18,6 +18,7 @@ import {
   type BackendCreateCampaignData,
   type BackendLoginData,
   type BackendMeData,
+  API_TARGET_GROUP,
 } from './mappers';
 import { tokenStore } from './tokenStore';
 
@@ -131,7 +132,8 @@ export const apiCampaignRepository: CampaignRepository = {
       id: data.idCampanha,
       name: input.name,
       template: input.template,
-      targetGroup: input.targetGroup,
+      // O formulário enxuto não pede grupo; o backend não tem esse campo.
+      targetGroup: API_TARGET_GROUP,
       status: 'scheduled',
       scheduledAt: input.scheduledAt.toISOString(),
       metrics: {

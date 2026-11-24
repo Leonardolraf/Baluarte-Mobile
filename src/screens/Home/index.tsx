@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -8,15 +8,12 @@ import {
   ListHeader,
   Screen,
   SquareButton,
-  TemplateSelect,
   ToastOffset,
 } from '../../components';
 import { useAuth, useCampaigns } from '../../contexts';
-import { filterByTemplate } from '../../lib/campaigns';
 import { firstName } from '../../lib/format';
 import { ROLE_LABEL } from '../../lib/labels';
 import { icons, spacing } from '../../theme';
-import type { TemplateId } from '../../types';
 import type { AppScreenProps } from '../../types/navigation';
 import { greetingBlockHeight, styles } from './styles';
 
@@ -24,11 +21,7 @@ export function HomeScreen({ navigation }: AppScreenProps<'Home'>) {
   const { user, signOut } = useAuth();
   const { campaigns, loading, error, noticePending, reload } = useCampaigns();
   const insets = useSafeAreaInsets();
-  // Estado da seleção de modelo: `null` = sem filtro (todas as campanhas).
-  const [template, setTemplate] = useState<TemplateId | null>(null);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
-
-  const visibleCampaigns = useMemo(() => filterByTemplate(campaigns, template), [campaigns, template]);
 
   if (!user) return null;
 
@@ -60,13 +53,9 @@ export function HomeScreen({ navigation }: AppScreenProps<'Home'>) {
         />
       </View>
 
-      <View style={styles.templates}>
-        <TemplateSelect mode="filter" value={template} onChange={setTemplate} />
-      </View>
-
       <ListHeader
         title="Campanhas"
-        subtitle={`Total ${visibleCampaigns.length}`}
+        subtitle={`Total ${campaigns.length}`}
         style={styles.listHeader}
       />
     </View>
@@ -77,7 +66,7 @@ export function HomeScreen({ navigation }: AppScreenProps<'Home'>) {
       {/* A Home não tem cabeçalho: o toast (ex.: ao voltar logo depois de agendar) fica abaixo da saudação. */}
       <ToastOffset offset={greetingBlockHeight} />
       <FlatList
-        data={visibleCampaigns}
+        data={campaigns}
         keyExtractor={(campaign) => campaign.id}
         renderItem={({ item }) => (
           <CampaignListItem
@@ -108,7 +97,7 @@ export function HomeScreen({ navigation }: AppScreenProps<'Home'>) {
               </Pressable>
             </View>
           ) : (
-            <Text style={styles.empty}>Nenhuma campanha com este modelo.</Text>
+            <Text style={styles.empty}>Nenhuma campanha por enquanto.</Text>
           )
         }
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + spacing.xxl }]}

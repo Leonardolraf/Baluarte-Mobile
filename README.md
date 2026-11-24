@@ -75,11 +75,26 @@ sem destinatários — o detalhe traz quem clicou/reportou).
 > Contas: o modo demo aceita as contas `@empresa.com` abaixo; o modo API exige
 > uma conta real cadastrada no backend (domínio interno, ex.: `@baluarte.test`).
 
+## Versão enxuta (apresentação de 25/11/2026)
+
+A pedido do professor o app ficou mais minimalista: **Login → Campanhas → Detalhes**, mais **Nova campanha**. Saíram as telas de redefinição de senha e de treinamento (as duas ficam no portal web), o filtro por modelo da Home e os elementos decorativos. No tablet o conteúdo fica numa coluna central de até 720 px.
+
+No **modo API** a Nova campanha pede só nome, modelo e destinatários: o backend não tem grupo-alvo nem data, e quem decide o domínio e as contas que podem receber é ele (o 422 aparece no formulário com a mensagem do backend). **Atenção:** criar campanha em produção dispara e-mail simulado para contas reais. Na demonstração, use só um destinatário de teste interno.
+
+### APK para o tablet (EAS Build)
+
+O `eas.json` tem o perfil `preview`, que gera um APK de instalação direta. A base da API **não fica no repositório**: ela vem da variável de ambiente `preview` do EAS (`EXPO_PUBLIC_API_BASE_URL`, criada com `eas env:create`).
+
+```bash
+npx eas-cli login
+npx eas-cli build --platform android --profile preview
+```
+
 ## Scripts
 
 | Comando | O que faz |
 |---|---|
-| `npm test` | Jest (jest-expo + Testing Library) — 16 suítes, 114 testes |
+| `npm test` | Jest (jest-expo + Testing Library) — 14 suítes, 110 testes |
 | `npm run typecheck` | `tsc --noEmit` com TypeScript estrito |
 | `npm run export:web` | `expo export --platform web` (gera `dist/`) |
 | `npx expo-doctor` | confere dependências e configuração do SDK |

@@ -22,6 +22,8 @@ export const radius = {
 export const layout = {
   /** Inset horizontal de todas as telas. */
   screenPadding: 24,
+  /** Largura máxima da coluna de conteúdo (tablet); no celular não limita. */
+  contentMaxWidth: 720,
   /** Altura do cabeçalho abaixo da área segura (inclui a borda inferior). */
   headerHeight: 60,
   buttonHeight: 48,
