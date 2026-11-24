@@ -38,6 +38,12 @@
       ],
       "expo-status-bar",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9f345541-e6d5-426d-be83-78fc4047bd7a"
+      }
+    },
+    "owner": "leonardo.lraf"
   }
 }
