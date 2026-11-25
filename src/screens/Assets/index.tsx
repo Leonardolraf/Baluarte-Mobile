@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Header, ListHeader, Screen } from '../../components';
+import { useAuth } from '../../contexts';
 import { assetRepository } from '../../data/repository';
 import {
   ASSET_SEVERITIES,
@@ -13,8 +14,8 @@ import { colors, spacing } from '../../theme';
 import type { Asset } from '../../types';
 import type { AppScreenProps } from '../../types/navigation';
 import {
+  DENIED_MESSAGE,
   FORBIDDEN_MESSAGE,
-  NOTICE_MESSAGE,
   stateFromError,
   type LoadState,
 } from './load';
@@ -69,6 +70,7 @@ function AssetRow({ asset, onPress }: { asset: Asset; onPress: () => void }) {
 export function AssetsScreen({ navigation }: AppScreenProps<'Assets'>) {
   const insets = useSafeAreaInsets();
   const [state, setState] = useState<LoadState<Asset[]>>({ kind: 'loading' });
+  const { requireNotice } = useAuth();
 
   const load = useCallback(() => {
     let active = true;
@@ -79,24 +81,28 @@ export function AssetsScreen({ navigation }: AppScreenProps<'Assets'>) {
         if (active) setState({ kind: 'ready', data: sortByRisk(assets) });
       })
       .catch((error: unknown) => {
-        if (active) setState(stateFromError(error));
+        if (!active) return;
+        const next = stateFromError<Asset[]>(error);
+        if (next.kind === 'notice') requireNotice();
+        setState(next);
       });
     return () => {
       active = false;
     };
-  }, []);
+  }, [requireNotice]);
 
   useEffect(() => load(), [load]);
 
   const assets = state.kind === 'ready' ? state.data : [];
 
   const empty =
-    state.kind === 'loading' ? (
+    // 'notice': a tela do aviso já está entrando no lugar desta; nunca "nenhum ativo".
+    state.kind === 'loading' || state.kind === 'notice' ? (
       <Text style={styles.empty}>Carregando ativos…</Text>
     ) : state.kind === 'forbidden' ? (
       <Text style={styles.empty}>{FORBIDDEN_MESSAGE}</Text>
-    ) : state.kind === 'notice' ? (
-      <Text style={styles.empty}>{NOTICE_MESSAGE}</Text>
+    ) : state.kind === 'denied' ? (
+      <Text style={styles.empty}>{DENIED_MESSAGE}</Text>
     ) : state.kind === 'error' ? (
       <View style={styles.emptyBox}>
         <Text style={styles.empty}>{state.message}</Text>

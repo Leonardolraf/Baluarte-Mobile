@@ -3,12 +3,19 @@
  * respostas para os modelos de domínio do app. Só é usado quando
  * `EXPO_PUBLIC_API_BASE_URL` está configurada.
  */
-import type { AssetRepository, AuthRepository, CampaignRepository } from '../../data/repository';
+import type {
+  AssetRepository,
+  AuthRepository,
+  CampaignRepository,
+  NoticeRepository,
+} from '../../data/repository';
 import { AUTH_MESSAGES, canAccessCampaigns, type AuthResult } from '../auth';
-import type { Asset, Campaign, NewCampaignInput, User } from '../../types';
+import type { Asset, Campaign, MonitoringNotice, NewCampaignInput, User } from '../../types';
 import { ApiError, NetworkError, request } from './client';
 import {
   assetFromApi,
+  noticeFromApi,
+  type BackendNotice,
   campaignFromList,
   campaignFromReport,
   createBodyFromInput,
@@ -174,3 +181,13 @@ export function createApiAssetRepository(): AssetRepository {
 }
 
 export const apiAssetRepository = createApiAssetRepository();
+
+export const apiNoticeRepository: NoticeRepository = {
+  async get(): Promise<MonitoringNotice> {
+    return noticeFromApi(await request<BackendNotice>('/monitoramento/aviso'));
+  },
+  async acknowledge(version: string): Promise<void> {
+    // 201 (nova) ou 200 (já existia): os dois valem. 409 sobe para a tela recarregar.
+    await request('/monitoramento/ciencia', { method: 'POST', body: { versao: version } });
+  },
+};

@@ -88,25 +88,26 @@ describe('Ativos', () => {
     expect(screen.queryByText(/^Total/)).not.toBeOnTheScreen();
   });
 
-  it('403 com código desconhecido também é "sem acesso", nunca lista vazia', async () => {
+  it('403 com código desconhecido dá mensagem neutra: nem "sem acesso", nem lista vazia', async () => {
     jest.spyOn(assetRepository, 'list').mockRejectedValue(new ApiError('x', 403, 'CODIGO_NOVO'));
     await renderApp({ user: ADMIN });
     await openAssets();
 
-    expect(await screen.findByText('Seu perfil não tem acesso aos ativos.')).toBeOnTheScreen();
+    expect(await screen.findByText('O servidor não liberou os ativos agora.')).toBeOnTheScreen();
+    expect(screen.queryByText('Seu perfil não tem acesso aos ativos.')).not.toBeOnTheScreen();
     expect(screen.queryByText('Nenhum ativo cadastrado.')).not.toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Tentar de novo' })).not.toBeOnTheScreen();
   });
 
-  it('403 de ciência pendente orienta a confirmar o aviso no portal', async () => {
+  it('403 de ciência pendente leva à tela do aviso de monitoramento', async () => {
     jest
       .spyOn(assetRepository, 'list')
       .mockRejectedValue(new ApiError('Ciência pendente', 403, 'CIENCIA_AVISO_PENDENTE'));
     await renderApp({ user: ADMIN });
     await openAssets();
 
-    expect(
-      await screen.findByText('Confirme o aviso de monitoramento no portal Baluarte para usar o app.'),
-    ).toBeOnTheScreen();
+    expect(await screen.findByRole('button', { name: 'Li e estou ciente' })).toBeOnTheScreen();
+    expect(screen.queryByText('Carregando ativos…')).not.toBeOnTheScreen();
   });
 
   it('falha de rede ou 5xx oferece tentar de novo, e a nova tentativa carrega', async () => {

@@ -11,7 +11,7 @@
  */
 import { IS_API_MODE } from '../lib/config';
 import type { AuthResult } from '../lib/auth';
-import type { Asset, Campaign, NewCampaignInput, User } from '../types';
+import type { Asset, Campaign, MonitoringNotice, NewCampaignInput, User } from '../types';
 
 export interface AuthRepository {
   /** Autentica e, no modo API, guarda o token de sessão. */
@@ -34,6 +34,16 @@ export interface AssetRepository {
   get(id: string): Promise<Asset | undefined>;
 }
 
+/**
+ * Aviso de monitoramento: ler e registrar a ciência funcionam SEM ciência
+ * (exigeSessao no servidor) — é o caminho de quem está barrado pelo 403.
+ */
+export interface NoticeRepository {
+  get(): Promise<MonitoringNotice>;
+  /** Registra a ciência da versão LIDA. 409 VERSAO_DESATUALIZADA sobe como ApiError. */
+  acknowledge(version: string): Promise<void>;
+}
+
 /** Carregamento preguiçoso: o módulo da API (e `expo-secure-store`) só entra em modo API. */
 function pickAuth(): AuthRepository {
   if (IS_API_MODE) return require('../lib/api/apiRepository').apiAuthRepository;
@@ -50,6 +60,12 @@ function pickAssets(): AssetRepository {
   return require('./mockRepository').mockAssetRepository;
 }
 
+function pickNotice(): NoticeRepository {
+  if (IS_API_MODE) return require('../lib/api/apiRepository').apiNoticeRepository;
+  return require('./mockRepository').mockNoticeRepository;
+}
+
 export const authRepository: AuthRepository = pickAuth();
 export const campaignRepository: CampaignRepository = pickCampaigns();
 export const assetRepository: AssetRepository = pickAssets();
+export const noticeRepository: NoticeRepository = pickNotice();

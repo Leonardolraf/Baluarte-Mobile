@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { Button, Header, Screen, SectionCard } from '../../components';
+import { useAuth } from '../../contexts';
 import { assetRepository } from '../../data/repository';
 import {
   ASSET_SEVERITIES,
@@ -15,7 +16,7 @@ import { colors } from '../../theme';
 import type { Asset } from '../../types';
 import type { AppScreenProps } from '../../types/navigation';
 import { riskTone } from '../Assets';
-import { FORBIDDEN_MESSAGE, NOTICE_MESSAGE, stateFromError, type LoadState } from '../Assets/load';
+import { FORBIDDEN_MESSAGE, DENIED_MESSAGE, stateFromError, type LoadState } from '../Assets/load';
 import { styles } from '../Assets/styles';
 
 function Field({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
@@ -31,6 +32,7 @@ function Field({ label, value, valueColor }: { label: string; value: string; val
 export function AssetDetailsScreen({ navigation, route }: AppScreenProps<'AssetDetails'>) {
   const { assetId } = route.params;
   const [state, setState] = useState<LoadState<Asset | undefined>>({ kind: 'loading' });
+  const { requireNotice } = useAuth();
 
   useEffect(() => {
     let active = true;
@@ -40,12 +42,15 @@ export function AssetDetailsScreen({ navigation, route }: AppScreenProps<'AssetD
         if (active) setState({ kind: 'ready', data: asset });
       })
       .catch((error: unknown) => {
-        if (active) setState(stateFromError(error));
+        if (!active) return;
+        const next = stateFromError<Asset | undefined>(error);
+        if (next.kind === 'notice') requireNotice();
+        setState(next);
       });
     return () => {
       active = false;
     };
-  }, [assetId]);
+  }, [assetId, requireNotice]);
 
   const header = <Header title="Ativo" onBack={() => navigation.goBack()} />;
 
@@ -53,8 +58,8 @@ export function AssetDetailsScreen({ navigation, route }: AppScreenProps<'AssetD
     const message =
       state.kind === 'forbidden'
         ? FORBIDDEN_MESSAGE
-        : state.kind === 'notice'
-          ? NOTICE_MESSAGE
+        : state.kind === 'denied'
+          ? DENIED_MESSAGE
           : state.kind === 'error'
             ? state.message
             : state.kind === 'ready'

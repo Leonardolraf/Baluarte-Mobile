@@ -6,16 +6,18 @@ import { colors } from '../theme';
 import { AppRoutes } from './app.routes';
 import { AuthRoutes } from './auth.routes';
 import { webLinking } from './linking';
+import { NoticeRoutes } from './notice.routes';
 import { documentTitle, navigationTheme } from './options';
 
 /**
  * Troca de pilha pela sessão: sem usuário, só as rotas públicas existem;
- * com usuário (Administrador ou Analista), só as do app. Não há como
+ * com usuário (Administrador ou Analista), só as do app — ou só o aviso de
+ * monitoramento, enquanto falta a ciência. Não há como
  * "voltar" para o login com o gesto de voltar depois de entrar.
  * Na web, cada tela tem URL própria (histórico do navegador) e título de aba em português.
  */
 export function Routes() {
-  const { user, restoring } = useAuth();
+  const { user, restoring, noticeRequired } = useAuth();
 
   // Modo API: enquanto verifica se há sessão salva, não pisca o Login.
   if (restoring) {
@@ -34,7 +36,8 @@ export function Routes() {
       documentTitle={documentTitle}
       linking={Platform.OS === 'web' ? webLinking : undefined}
     >
-      {user ? <AppRoutes /> : <AuthRoutes />}
+      {/* Sem a ciência do aviso, só a tela do aviso; depois dela, o app volta pela Home. */}
+      {!user ? <AuthRoutes /> : noticeRequired ? <NoticeRoutes /> : <AppRoutes />}
     </NavigationContainer>
   );
 }

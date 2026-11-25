@@ -79,7 +79,9 @@ sem destinatários — o detalhe traz quem clicou/reportou).
 
 A pedido do professor o app ficou mais minimalista: **Login → Campanhas → Detalhes**, mais **Nova campanha**. Saíram as telas de redefinição de senha e de treinamento (as duas ficam no portal web), o filtro por modelo da Home e os elementos decorativos. No tablet o conteúdo fica numa coluna central de até 720 px.
 
-**Ativos (só leitura):** o botão de servidor na Home (Administrador e Analista) abre a lista do `GET /assets`, com o ativo de maior nota de risco primeiro, e o detalhe de cada ativo: nota, achados abertos por severidade, tipo, host, IP, situação, última varredura e descrição. O detalhe usa os campos da própria lista, sem endpoint novo. Não há cadastro, edição nem exclusão. Quem decide o acesso é o servidor: um 403 aparece como "sem acesso" (ou como o pedido de ciência do aviso, quando o código é `CIENCIA_AVISO_PENDENTE`), e o app não tenta de novo. Nota ou contagem que o servidor não mandou aparece como "—", nunca como zero. No modo demo os seis ativos são os do mock do frontend.
+**Aviso de monitoramento (ciência):** sem a ciência, o app mostra o aviso de monitoramento antes de qualquer dado. Isso acontece logo depois do login, quando o `/me` traz `cienciaAvisoPendente: true`, ou quando qualquer rota (lista, detalhe, Nova campanha, Ativos) responde `403 CIENCIA_AVISO_PENDENTE`, que é quem decide. O texto e a versão vêm do `GET /monitoramento/aviso` (no modo demo, da cópia do `MOCK_MONITORING_NOTICE` do frontend). "Li e estou ciente" faz `POST /monitoramento/ciencia { versao }`: 201 ou 200 liberam e o app volta para a Home recarregando os dados; o que estava preenchido num formulário se perde. Um `409 VERSAO_DESATUALIZADA` recarrega o aviso para nova leitura. O 403 não apaga a sessão, e dá para sair da conta pelo aviso.
+
+**Ativos (só leitura):** o botão de servidor na Home (Administrador e Analista) abre a lista do `GET /assets`, com o ativo de maior nota de risco primeiro, e o detalhe de cada ativo: nota, achados abertos por severidade, tipo, host, IP, situação, última varredura e descrição. O detalhe usa os campos da própria lista, sem endpoint novo. Não há cadastro, edição nem exclusão. Quem decide o acesso é o servidor: `PERFIL_SEM_PERMISSAO` aparece como "sem acesso", um 403 de código desconhecido ganha uma mensagem neutra, `CIENCIA_AVISO_PENDENTE` leva ao aviso, e o app não tenta de novo. Nota ou contagem que o servidor não mandou aparece como "—", nunca como zero. No modo demo os seis ativos são os do mock do frontend.
 
 No **modo API** a Nova campanha pede só nome, modelo e destinatários: o backend não tem grupo-alvo nem data, e quem decide o domínio e as contas que podem receber é ele (o 422 aparece no formulário com a mensagem do backend). **Atenção:** criar campanha em produção dispara e-mail simulado para contas reais. Na demonstração, use só um destinatário de teste interno.
 
@@ -96,7 +98,7 @@ npx eas-cli build --platform android --profile preview
 
 | Comando | O que faz |
 |---|---|
-| `npm test` | Jest (jest-expo + Testing Library) — 17 suítes, 134 testes |
+| `npm test` | Jest (jest-expo + Testing Library) — 19 suítes, 150 testes |
 | `npm run typecheck` | `tsc --noEmit` com TypeScript estrito |
 | `npm run export:web` | `expo export --platform web` (gera `dist/`) |
 | `npx expo-doctor` | confere dependências e configuração do SDK |

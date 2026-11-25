@@ -5,10 +5,11 @@
  */
 import { authenticate, type AuthResult } from '../lib/auth';
 import { createScheduledCampaign, sortByScheduleDesc } from '../lib/campaigns';
-import type { Asset, Campaign, NewCampaignInput, User } from '../types';
+import type { Asset, Campaign, MonitoringNotice, NewCampaignInput, User } from '../types';
 import { buildInitialAssets } from './assets';
+import { MOCK_MONITORING_NOTICE } from './monitoringNotice';
 import { buildInitialCampaigns } from './campaigns';
-import type { AssetRepository, AuthRepository, CampaignRepository } from './repository';
+import type { AssetRepository, AuthRepository, CampaignRepository, NoticeRepository } from './repository';
 
 export const mockAuthRepository: AuthRepository = {
   async signIn(email, password): Promise<AuthResult> {
@@ -67,3 +68,18 @@ export function createMockAssetRepository(): AssetRepository {
 }
 
 export const mockAssetRepository = createMockAssetRepository();
+
+export function createMockNoticeRepository(): NoticeRepository {
+  let acknowledged = false;
+  return {
+    async get(): Promise<MonitoringNotice> {
+      return { ...MOCK_MONITORING_NOTICE, acknowledged };
+    },
+    async acknowledge(version: string): Promise<void> {
+      if (version !== MOCK_MONITORING_NOTICE.version) throw new Error('Versão do aviso desatualizada.');
+      acknowledged = true;
+    },
+  };
+}
+
+export const mockNoticeRepository = createMockNoticeRepository();

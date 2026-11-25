@@ -33,6 +33,8 @@ export function CampaignDetailsScreen({ navigation, route }: AppScreenProps<'Cam
       .then((full) => {
         if (active && full) setDetail(full);
       })
+      // Falha no detalhe: fica com o resumo da lista (o 403 de ciência já levou ao aviso).
+      .catch(() => undefined)
       .finally(() => {
         if (active) setLoadingDetail(false);
       });

@@ -9,7 +9,8 @@ import {
 } from 'react';
 import { buildInitialCampaigns } from '../data/campaigns';
 import { campaignRepository } from '../data/repository';
-import { ApiError } from '../lib/api/client';
+import { isNoticePending } from '../lib/notice';
+import { useAuth } from './auth';
 import { IS_API_MODE } from '../lib/config';
 import { sortByScheduleDesc } from '../lib/campaigns';
 import type { Campaign, NewCampaignInput } from '../types';
@@ -21,12 +22,6 @@ interface CampaignsContextValue {
   loading: boolean;
   /** Mensagem de erro do carregamento da lista, ou `null`. */
   error: string | null;
-  /**
-   * `true` quando a API barra os dados por ciência do aviso pendente
-   * (403 CIENCIA_AVISO_PENDENTE): a sessão é válida, mas falta a pessoa dar
-   * ciência no portal web. A UI mostra orientação em vez de erro genérico.
-   */
-  noticePending: boolean;
   getCampaign: (id: string) => Campaign | undefined;
   /** No modo API, busca o detalhe completo (funil, destinatários) da campanha. */
   loadCampaignDetail: (id: string) => Promise<Campaign | undefined>;
@@ -55,15 +50,15 @@ export function CampaignsProvider({ children, initialCampaigns }: CampaignsProvi
   const shouldFetch = IS_API_MODE && !initialCampaigns;
   const [loading, setLoading] = useState(shouldFetch);
   const [error, setError] = useState<string | null>(null);
-  const [noticePending, setNoticePending] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const { noticeRequired, requireNotice, dataEpoch } = useAuth();
 
   useEffect(() => {
-    if (!shouldFetch) return;
+    // Sem ciência, as rotas de dados respondem 403: espera a tela do aviso.
+    if (!shouldFetch || noticeRequired) return;
     let active = true;
     setLoading(true);
     setError(null);
-    setNoticePending(false);
     campaignRepository
       .list()
       .then((list) => {
@@ -71,9 +66,9 @@ export function CampaignsProvider({ children, initialCampaigns }: CampaignsProvi
       })
       .catch((err) => {
         if (!active) return;
-        // Ciência do aviso pendente: sessão válida, falta ato no portal — não é erro.
-        if (err instanceof ApiError && err.code === 'CIENCIA_AVISO_PENDENTE') {
-          setNoticePending(true);
+        // Ciência do aviso pendente: sessão válida, falta a ciência — vai para a tela do aviso.
+        if (isNoticePending(err)) {
+          requireNotice();
         } else {
           setError(LOAD_ERROR);
         }
@@ -84,17 +79,24 @@ export function CampaignsProvider({ children, initialCampaigns }: CampaignsProvi
     return () => {
       active = false;
     };
-  }, [shouldFetch, reloadKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldFetch, reloadKey, dataEpoch, noticeRequired]);
 
   const getCampaign = useCallback(
     (id: string) => campaigns.find((campaign) => campaign.id === id),
-    [campaigns],
+    [campaigns, requireNotice],
   );
 
   const loadCampaignDetail = useCallback(
     async (id: string) => {
       if (!IS_API_MODE) return campaigns.find((campaign) => campaign.id === id);
-      const detail = await campaignRepository.get(id);
+      let detail: Campaign | undefined;
+      try {
+        detail = await campaignRepository.get(id);
+      } catch (err) {
+        if (isNoticePending(err)) requireNotice();
+        throw err;
+      }
       if (detail) {
         // Atualiza a cópia na lista para refletir o detalhe mais fresco.
         setCampaigns((current) =>
@@ -109,10 +111,17 @@ export function CampaignsProvider({ children, initialCampaigns }: CampaignsProvi
   );
 
   const scheduleCampaign = useCallback(async (input: NewCampaignInput) => {
-    const campaign = await campaignRepository.create(input);
+    let campaign: Campaign;
+    try {
+      campaign = await campaignRepository.create(input);
+    } catch (err) {
+      // O POST também é barrado sem ciência: leva à tela do aviso (o formulário se perde).
+      if (isNoticePending(err)) requireNotice();
+      throw err;
+    }
     setCampaigns((current) => sortByScheduleDesc([campaign, ...current]));
     return campaign;
-  }, []);
+  }, [requireNotice]);
 
   const reload = useCallback(() => setReloadKey((key) => key + 1), []);
 
@@ -121,13 +130,12 @@ export function CampaignsProvider({ children, initialCampaigns }: CampaignsProvi
       campaigns,
       loading,
       error,
-      noticePending,
       getCampaign,
       loadCampaignDetail,
       scheduleCampaign,
       reload,
     }),
-    [campaigns, loading, error, noticePending, getCampaign, loadCampaignDetail, scheduleCampaign, reload],
+    [campaigns, loading, error, getCampaign, loadCampaignDetail, scheduleCampaign, reload],
   );
 
   return <CampaignsContext.Provider value={value}>{children}</CampaignsContext.Provider>;

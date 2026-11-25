@@ -5,6 +5,7 @@
  */
 import { emailFromName } from '../format';
 import type {
+  MonitoringNotice,
   Asset,
   AssetSeverity,
   Campaign,
@@ -345,5 +346,33 @@ export function assetFromApi(raw: BackendAsset): Asset {
     ...(isCount(raw.notaRisco) ? { riskScore: raw.notaRisco } : {}),
     ...(isCount(raw.achadosAbertos) ? { openFindings: raw.achadosAbertos } : {}),
     ...(openBySeverity ? { openBySeverity } : {}),
+  };
+}
+
+// ----- Aviso de monitoramento (GET /monitoramento/aviso) -----
+
+export interface BackendNotice {
+  versao: string;
+  rascunho?: boolean;
+  titulo: string;
+  introducao: string;
+  secoes: { id: string; titulo: string; paragrafos?: string[]; itens?: string[]; observacoes?: string[] }[];
+  ciencia?: { registrada?: boolean; registradaEm?: string | null };
+}
+
+export function noticeFromApi(raw: BackendNotice): MonitoringNotice {
+  return {
+    version: raw.versao,
+    title: raw.titulo,
+    intro: raw.introducao,
+    sections: (raw.secoes ?? []).map((s) => ({
+      id: s.id,
+      title: s.titulo,
+      paragraphs: s.paragrafos ?? [],
+      items: s.itens ?? [],
+      notes: s.observacoes ?? [],
+    })),
+    // Só `true` explícito conta como ciência registrada.
+    acknowledged: raw.ciencia?.registrada === true,
   };
 }

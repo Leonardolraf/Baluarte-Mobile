@@ -19,6 +19,7 @@ import { DEFAULT_TARGET_GROUP } from '../../data/groups';
 import { getTemplate } from '../../data/templates';
 import { ApiError } from '../../lib/api/client';
 import { IS_API_MODE } from '../../lib/config';
+import { isNoticePending } from '../../lib/notice';
 import { padTwo } from '../../lib/format';
 import {
   CAMPAIGN_NAME_MAX,
@@ -110,6 +111,8 @@ export function NewCampaignScreen({ navigation }: AppScreenProps<'NewCampaign'>)
       // Substitui a Nova campanha: o "voltar" dos Detalhes leva direto à Home.
       navigation.replace('CampaignDetails', { campaignId: campaign.id });
     } catch (err) {
+      // 403 de ciência: o contexto já trocou para a tela do aviso; nada de caixa de erro.
+      if (isNoticePending(err)) return;
       setSubmitting(false);
       // O backend explica o motivo (destinatário externo, não cadastrado, convite
       // pendente, envio em massa…): mostra a mensagem dele no formulário.

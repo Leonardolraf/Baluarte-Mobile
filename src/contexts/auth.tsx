@@ -22,6 +22,18 @@ interface AuthContextValue {
    */
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signOut: () => void;
+  /**
+   * `true` quando falta a ciência do aviso de monitoramento: as rotas trocam para
+   * a tela do aviso. Liga pelo `cienciaAvisoPendente` do /me (orienta) ou por
+   * QUALQUER 403 CIENCIA_AVISO_PENDENTE (autoridade), via `requireNotice`.
+   */
+  noticeRequired: boolean;
+  /** Chamado por quem recebeu 403 CIENCIA_AVISO_PENDENTE de qualquer rota. */
+  requireNotice: () => void;
+  /** Ciência registrada: volta ao app (Home) e recarrega os dados. */
+  noticeAcknowledged: () => void;
+  /** Muda a cada ciência registrada: quem guarda dados do servidor recarrega. */
+  dataEpoch: number;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -34,6 +46,9 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children, initialUser = null }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(initialUser);
+  // Só `true` explícito do /me liga a tela antes; ausente = desconhecido, e o 403 decide.
+  const [noticeRequired, setNoticeRequired] = useState(initialUser?.noticePending === true);
+  const [dataEpoch, setDataEpoch] = useState(0);
   // Só há o que restaurar no modo API e quando não começamos já logados (testes).
   const [restoring, setRestoring] = useState(IS_API_MODE && initialUser === null);
 
@@ -43,7 +58,10 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
     authRepository
       .restoreSession()
       .then((restored) => {
-        if (active && restored) setUser(restored);
+        if (active && restored) {
+          setUser(restored);
+          setNoticeRequired(restored.noticePending === true);
+        }
       })
       .finally(() => {
         if (active) setRestoring(false);
@@ -57,19 +75,29 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
 
   const signIn = useCallback(async (email: string, password: string) => {
     const result = await authRepository.signIn(email, password);
-    if (result.ok) setUser(result.user);
+    if (result.ok) {
+      setUser(result.user);
+      setNoticeRequired(result.user.noticePending === true);
+    }
     return result;
   }, []);
 
   const signOut = useCallback(() => {
     setUser(null);
+    setNoticeRequired(false);
     // Encerra no servidor/limpa o token em segundo plano (não trava a UI).
     void authRepository.signOut();
   }, []);
 
+  const requireNotice = useCallback(() => setNoticeRequired(true), []);
+  const noticeAcknowledged = useCallback(() => {
+    setNoticeRequired(false);
+    setDataEpoch((epoch) => epoch + 1);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, restoring, signIn, signOut }),
-    [user, restoring, signIn, signOut],
+    () => ({ user, restoring, signIn, signOut, noticeRequired, requireNotice, noticeAcknowledged, dataEpoch }),
+    [user, restoring, signIn, signOut, noticeRequired, requireNotice, noticeAcknowledged, dataEpoch],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

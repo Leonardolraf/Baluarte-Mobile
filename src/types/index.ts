@@ -70,6 +70,24 @@ export interface Campaign {
   recipients: Recipient[];
 }
 
+export interface MonitoringNoticeSection {
+  id: string;
+  title: string;
+  paragraphs: string[];
+  items: string[];
+  notes: string[];
+}
+
+/** Aviso de monitoramento (GET /monitoramento/aviso): texto e versão vêm do servidor. */
+export interface MonitoringNotice {
+  version: string;
+  title: string;
+  intro: string;
+  sections: MonitoringNoticeSection[];
+  /** Ciência do usuário atual NESTA versão. */
+  acknowledged: boolean;
+}
+
 /** Severidades que entram na nota de risco do ativo (as quatro chaves do servidor). */
 export type AssetSeverity = 'critical' | 'high' | 'medium' | 'low';
 
