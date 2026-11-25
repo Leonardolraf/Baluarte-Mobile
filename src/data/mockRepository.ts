@@ -5,9 +5,10 @@
  */
 import { authenticate, type AuthResult } from '../lib/auth';
 import { createScheduledCampaign, sortByScheduleDesc } from '../lib/campaigns';
-import type { Campaign, NewCampaignInput, User } from '../types';
+import type { Asset, Campaign, NewCampaignInput, User } from '../types';
+import { buildInitialAssets } from './assets';
 import { buildInitialCampaigns } from './campaigns';
-import type { AuthRepository, CampaignRepository } from './repository';
+import type { AssetRepository, AuthRepository, CampaignRepository } from './repository';
 
 export const mockAuthRepository: AuthRepository = {
   async signIn(email, password): Promise<AuthResult> {
@@ -51,3 +52,18 @@ export function createMockCampaignRepository(): CampaignRepository {
 }
 
 export const mockCampaignRepository = createMockCampaignRepository();
+
+export function createMockAssetRepository(): AssetRepository {
+  let seeded: Asset[] | null = null;
+  const ensureSeed = (): Asset[] => (seeded ??= buildInitialAssets(new Date()));
+  return {
+    async list(): Promise<Asset[]> {
+      return ensureSeed();
+    },
+    async get(id: string): Promise<Asset | undefined> {
+      return ensureSeed().find((asset) => asset.id === id);
+    },
+  };
+}
+
+export const mockAssetRepository = createMockAssetRepository();

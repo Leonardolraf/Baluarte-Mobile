@@ -70,6 +70,32 @@ export interface Campaign {
   recipients: Recipient[];
 }
 
+/** Severidades que entram na nota de risco do ativo (as quatro chaves do servidor). */
+export type AssetSeverity = 'critical' | 'high' | 'medium' | 'low';
+
+/**
+ * Ativo monitorado (GET /assets), só leitura no app.
+ *
+ * `riskScore`, `openFindings` e `openBySeverity` vêm calculados pelo servidor.
+ * Quando a API não os manda, ficam `undefined` = DESCONHECIDO — nunca 0, porque
+ * "sem dado" não é "sem risco".
+ */
+export interface Asset {
+  id: string;
+  name: string;
+  /** Rótulo do tipo como o servidor manda (Servidor, Aplicação, Rede…). */
+  type: string;
+  host: string;
+  ip: string | null;
+  description: string | null;
+  status: 'active' | 'inactive';
+  /** ISO da última varredura (concluída ou, se ainda em curso, iniciada); `null` = nunca varrido. */
+  lastScanAt: string | null;
+  riskScore?: number;
+  openFindings?: number;
+  openBySeverity?: Record<AssetSeverity, number>;
+}
+
 /** Dados já validados para agendar uma campanha nova. */
 export interface NewCampaignInput {
   name: string;

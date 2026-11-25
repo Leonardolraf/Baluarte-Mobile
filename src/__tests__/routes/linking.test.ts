@@ -19,11 +19,16 @@ describe('URLs na web (routes/linking.ts)', () => {
       name: 'CampaignDetails',
       params: { campaignId: 'camp-001' },
     });
+    expect(focusedRoute('/ativos')).toMatchObject({ name: 'Assets' });
+    expect(focusedRoute('/ativos/asset-001')).toMatchObject({
+      name: 'AssetDetails',
+      params: { assetId: 'asset-001' },
+    });
   });
 
   it('versão enxuta: redefinição de senha e treinamento não têm mais rota', () => {
     const names = Object.keys(webLinking.config?.screens ?? {});
-    expect(names).toEqual(['Login', 'Home', 'NewCampaign', 'CampaignDetails']);
+    expect(names).toEqual(['Login', 'Home', 'NewCampaign', 'CampaignDetails', 'Assets', 'AssetDetails']);
   });
 
   it('tela aberta direto pela URL (ou página recarregada) ganha a tela de base embaixo', () => {
@@ -31,6 +36,7 @@ describe('URLs na web (routes/linking.ts)', () => {
     expect(stackFor('/campanhas')).toEqual(['Home']);
     expect(stackFor('/campanhas/camp-001')).toEqual(['Home', 'CampaignDetails']);
     expect(stackFor('/campanhas/nova')).toEqual(['Home', 'NewCampaign']);
+    expect(stackFor('/ativos')).toEqual(['Home', 'Assets']);
   });
 
   it('parâmetros fora do caminho não vão para a URL', () => {

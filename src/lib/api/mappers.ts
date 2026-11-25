@@ -5,6 +5,8 @@
  */
 import { emailFromName } from '../format';
 import type {
+  Asset,
+  AssetSeverity,
   Campaign,
   CampaignMetrics,
   CampaignStatus,
@@ -280,5 +282,68 @@ export function createBodyFromInput(input: {
     nome: input.name,
     destinatarios: input.recipients,
     template: TEMPLATE_TO_LABEL[input.template],
+  };
+}
+
+// ----- Ativos (GET /assets) -----
+
+export interface BackendAsset {
+  id: string;
+  nome: string;
+  host: string;
+  tipo: string;
+  status: string;
+  criadoEm?: string;
+  ip?: string | null;
+  descricao?: string | null;
+  achadosAbertos?: number;
+  /** Nota 0–100 calculada pelo servidor a cada leitura (B25). */
+  notaRisco?: number;
+  /** Rótulos do servidor: Crítico, Alto, Médio, Baixo. */
+  abertosPorSeveridade?: Record<string, number>;
+  ultimaVarredura?: { id: string; status: string; criadoEm: string; concluidoEm?: string | null } | null;
+}
+
+const SEVERITY_FROM_LABEL: Record<string, AssetSeverity> = {
+  critico: 'critical',
+  alto: 'high',
+  medio: 'medium',
+  baixo: 'low',
+};
+
+function isCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+/**
+ * Abertos por severidade. Só devolve o mapa se as QUATRO chaves vierem com número:
+ * mapa parcial preenchido com zero diria "sem crítico" sem o servidor ter dito.
+ */
+export function severityMapFromApi(raw: Record<string, number> | undefined): Record<AssetSeverity, number> | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const map: Partial<Record<AssetSeverity, number>> = {};
+  for (const [label, count] of Object.entries(raw)) {
+    const key = SEVERITY_FROM_LABEL[norm(label)];
+    if (key && isCount(count)) map[key] = count;
+  }
+  const complete = (['critical', 'high', 'medium', 'low'] as AssetSeverity[]).every((k) => k in map);
+  return complete ? (map as Record<AssetSeverity, number>) : undefined;
+}
+
+export function assetFromApi(raw: BackendAsset): Asset {
+  const openBySeverity = severityMapFromApi(raw.abertosPorSeveridade);
+  return {
+    id: raw.id,
+    name: raw.nome,
+    type: raw.tipo,
+    host: raw.host,
+    ip: raw.ip ?? null,
+    description: raw.descricao ?? null,
+    status: norm(raw.status) === 'inativo' ? 'inactive' : 'active',
+    lastScanAt: raw.ultimaVarredura?.concluidoEm ?? raw.ultimaVarredura?.criadoEm ?? null,
+    // Ausente = desconhecido (undefined), nunca 0.
+    ...(isCount(raw.notaRisco) ? { riskScore: raw.notaRisco } : {}),
+    ...(isCount(raw.achadosAbertos) ? { openFindings: raw.achadosAbertos } : {}),
+    ...(openBySeverity ? { openBySeverity } : {}),
   };
 }

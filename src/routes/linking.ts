@@ -12,6 +12,8 @@ const BASE_SCREEN: Record<RootScreen, RootScreen | null> = {
   Home: null,
   NewCampaign: 'Home',
   CampaignDetails: 'Home',
+  Assets: 'Home',
+  AssetDetails: 'Home',
 };
 
 function isRootScreen(name: string): name is RootScreen {
@@ -34,6 +36,8 @@ export const webLinking: LinkingOptions<RootStackParamList> = {
       Home: 'campanhas',
       NewCampaign: 'campanhas/nova',
       CampaignDetails: 'campanhas/:campaignId',
+      Assets: 'ativos',
+      AssetDetails: 'ativos/:assetId',
     },
   },
   getStateFromPath: (path, options) => {

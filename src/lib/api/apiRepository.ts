@@ -3,16 +3,18 @@
  * respostas para os modelos de domínio do app. Só é usado quando
  * `EXPO_PUBLIC_API_BASE_URL` está configurada.
  */
-import type { AuthRepository, CampaignRepository } from '../../data/repository';
+import type { AssetRepository, AuthRepository, CampaignRepository } from '../../data/repository';
 import { AUTH_MESSAGES, canAccessCampaigns, type AuthResult } from '../auth';
-import type { Campaign, NewCampaignInput, User } from '../../types';
+import type { Asset, Campaign, NewCampaignInput, User } from '../../types';
 import { ApiError, NetworkError, request } from './client';
 import {
+  assetFromApi,
   campaignFromList,
   campaignFromReport,
   createBodyFromInput,
   userFromLogin,
   userFromMe,
+  type BackendAsset,
   type BackendCampaignList,
   type BackendCampaignReport,
   type BackendCreateCampaignData,
@@ -148,3 +150,27 @@ export const apiCampaignRepository: CampaignRepository = {
     };
   },
 };
+
+/**
+ * Ativos: o detalhe usa a última lista lida (o GET /assets já traz tudo); sem
+ * lista em memória, lê de novo. Erros (403 de perfil ou de ciência) sobem para
+ * a tela, que decide pelo código do servidor.
+ */
+export function createApiAssetRepository(): AssetRepository {
+  let last: Asset[] | null = null;
+  const load = async (): Promise<Asset[]> => {
+    const raw = await request<BackendAsset[]>('/assets');
+    last = (raw ?? []).map(assetFromApi);
+    return last;
+  };
+  return {
+    list: load,
+    async get(id: string): Promise<Asset | undefined> {
+      const cached = last?.find((asset) => asset.id === id);
+      if (cached) return cached;
+      return (await load()).find((asset) => asset.id === id);
+    },
+  };
+}
+
+export const apiAssetRepository = createApiAssetRepository();

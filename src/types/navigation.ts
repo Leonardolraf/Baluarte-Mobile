@@ -9,6 +9,8 @@ export type AppStackParamList = {
   Home: undefined;
   NewCampaign: undefined;
   CampaignDetails: { campaignId: string };
+  Assets: undefined;
+  AssetDetails: { assetId: string };
 };
 
 /** As duas pilhas juntas (configuração das URLs na web). */

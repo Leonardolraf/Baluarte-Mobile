@@ -17,6 +17,7 @@ import GraduationCap from 'lucide-react-native/icons/graduation-cap';
 import Info from 'lucide-react-native/icons/info';
 import Mail from 'lucide-react-native/icons/mail';
 import Plus from 'lucide-react-native/icons/plus';
+import Server from 'lucide-react-native/icons/server';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import Users from 'lucide-react-native/icons/users';
 import X from 'lucide-react-native/icons/x';
@@ -39,6 +40,7 @@ export const icons = {
   Info,
   Mail,
   Plus,
+  Server,
   TriangleAlert,
   Users,
   X,

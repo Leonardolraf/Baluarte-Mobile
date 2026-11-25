@@ -11,6 +11,7 @@ import {
   ToastOffset,
 } from '../../components';
 import { useAuth, useCampaigns } from '../../contexts';
+import { canAccessAssets } from '../../lib/assets';
 import { firstName } from '../../lib/format';
 import { ROLE_LABEL } from '../../lib/labels';
 import { icons, spacing } from '../../theme';
@@ -45,6 +46,15 @@ export function HomeScreen({ navigation }: AppScreenProps<'Home'>) {
             {ROLE_LABEL[user.role]} · {user.department}
           </Text>
         </View>
+
+        {/* Ativos: só Administrador e Analista (o servidor confirma com 403 se não). */}
+        {canAccessAssets(user.role) ? (
+          <SquareButton
+            icon={icons.Server}
+            accessibilityLabel="Ativos"
+            onPress={() => navigation.navigate('Assets')}
+          />
+        ) : null}
 
         <SquareButton
           icon={icons.Plus}

@@ -11,7 +11,7 @@
  */
 import { IS_API_MODE } from '../lib/config';
 import type { AuthResult } from '../lib/auth';
-import type { Campaign, NewCampaignInput, User } from '../types';
+import type { Asset, Campaign, NewCampaignInput, User } from '../types';
 
 export interface AuthRepository {
   /** Autentica e, no modo API, guarda o token de sessão. */
@@ -28,6 +28,12 @@ export interface CampaignRepository {
   create(input: NewCampaignInput): Promise<Campaign>;
 }
 
+/** Ativos: só leitura (GET /assets). O detalhe sai da mesma lista, sem endpoint novo. */
+export interface AssetRepository {
+  list(): Promise<Asset[]>;
+  get(id: string): Promise<Asset | undefined>;
+}
+
 /** Carregamento preguiçoso: o módulo da API (e `expo-secure-store`) só entra em modo API. */
 function pickAuth(): AuthRepository {
   if (IS_API_MODE) return require('../lib/api/apiRepository').apiAuthRepository;
@@ -39,5 +45,11 @@ function pickCampaigns(): CampaignRepository {
   return require('./mockRepository').mockCampaignRepository;
 }
 
+function pickAssets(): AssetRepository {
+  if (IS_API_MODE) return require('../lib/api/apiRepository').apiAssetRepository;
+  return require('./mockRepository').mockAssetRepository;
+}
+
 export const authRepository: AuthRepository = pickAuth();
 export const campaignRepository: CampaignRepository = pickCampaigns();
+export const assetRepository: AssetRepository = pickAssets();
